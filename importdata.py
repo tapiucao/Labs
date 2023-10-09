@@ -2,46 +2,111 @@ import os
 import kaggle
 from pyspark.sql import SparkSession
 
-def download_dataset(dataset_name, path_to_store):
+import pandas as pd
+from azure.storage.filedatalake import DataLakeServiceClient
+
+
+def fetch_kaggle_dataset_as_dataframe(dataset_name, file_name):
     """
-    Downloads a Kaggle dataset.
-    
+    Fetch a specified Kaggle dataset file and return it as a Pandas DataFrame.
+
     Args:
     - dataset_name (str): The identifier for the dataset in format "USERNAME/DATASET".
-    - path_to_store (str): Directory path to store the downloaded dataset.
-    """
-    kaggle.api.authenticate()
-    kaggle.api.dataset_download_files(dataset_name, path=path_to_store, unzip=True)
+    - file_name (str): The specific file within the dataset.
 
-def read_dataset_with_spark(spark, file_path):
-    """
-    Reads a dataset into a Spark DataFrame.
-    
-    Args:
-    - spark (SparkSession): Spark session instance.
-    - file_path (str): Path to the dataset file.
-    
     Returns:
-    - Spark DataFrame
+    - pd.DataFrame: DataFrame containing the dataset's data.
     """
-    return spark.read.csv(file_path, header=True, inferSchema=True)
+    
+    # Create a temporary directory for the Kaggle dataset
+    download_dir = "./temp_kaggle_download"
+    if not os.path.exists(download_dir):
+        os.makedirs(download_dir)
 
-# Initialize Spark
-spark = SparkSession.builder \
-    .appName("KaggleDataProcessing") \
-    .getOrCreate()
+    # Authenticate and download the dataset
+    kaggle.api.authenticate()
+    kaggle.api.dataset_download_files(dataset_name, path=download_dir, unzip=True)
 
-# Example usage:
-dataset = "cisautomotiveapi/large-car-dataset"  # This is just an example dataset
-download_path = "./"
-dataset_file = "CIS_Automotive_Kaggle_Sample.csv"  # Replace with the desired file in the dataset
-download_dataset(dataset, download_path)
+    # Path to the desired file within the dataset
+    file_path = os.path.join(download_dir, file_name)
+    
+    # Load the file into a Pandas DataFrame
+    df = pd.read_csv(file_path)
+    
+    # Clean up (delete the temporary dataset directory)
+    os.remove(file_path)
+    os.rmdir(download_dir)
+    
+    return df
 
-df = read_dataset_with_spark(spark, os.path.join(download_path, dataset_file))
 
-# Example transformation: Counting rows in the DataFrame
-row_count = df.count()
-print(f"Number of rows in the dataset: {row_count}")
+def group_and_count_ordered(df_pandas):
+    """
+    Receives a Pandas DataFrame, uses Spark to perform row count grouped by 'town', 
+    orders the result by count, and returns the result as a Pandas DataFrame.
 
-# Stop the Spark session
-spark.stop()
+    Args:
+    - df_pandas (pd.DataFrame): Input Pandas DataFrame.
+
+    Returns:
+    - pd.DataFrame: Resultant DataFrame with counts per town ordered by count.
+    """
+
+    # Initialize Spark session
+    spark = SparkSession.builder.appName("GroupByTownOrdered").getOrCreate()
+
+    # Convert Pandas DataFrame to Spark DataFrame
+    df_spark = spark.createDataFrame(df_pandas)
+
+    # Group by 'town', count rows, and order by count
+    grouped_df_spark = df_spark.groupBy("town").count().orderBy("count", ascending=False)
+
+    # Convert the result back to Pandas DataFrame
+    result_df_pandas = grouped_df_spark.toPandas()
+
+    # Stop the Spark session
+    spark.stop()
+
+    return result_df_pandas
+
+def save_dataframe_to_adls2(df, account_name, account_key, filesystem_name, file_path):
+    """
+    Saves a Pandas DataFrame to Azure Data Lake Storage Gen2.
+
+    Args:
+    - df (pd.DataFrame): The DataFrame to save.
+    - account_name (str): The ADLS Gen2 account name.
+    - account_key (str): The ADLS Gen2 account key.
+    - filesystem_name (str): The name of the filesystem (equivalent to a container in Blob storage).
+    - file_path (str): The path where the file should be saved, including the filename (e.g., "folder/data.csv").
+
+    Returns:
+    None
+    """
+
+    # Convert DataFrame to CSV string
+    csv_data = df.to_csv(index=False)
+
+    # Establish a connection to ADLS Gen2
+    service_client = DataLakeServiceClient(account_url=f"https://{account_name}.dfs.core.windows.net", 
+                                           credential=account_key)
+
+    # Get the filesystem client
+    filesystem_client = service_client.get_file_system_client(filesystem_name)
+
+    # Get the file client and upload data
+    file_client = filesystem_client.get_file_client(file_path)
+    file_client.upload_data(csv_data, overwrite=True)
+
+# Example Usage: Fetch a specified Kaggle dataset file and return it as a Pandas DataFrame.
+dataset_id = "uciml/iris"  # Use your desired dataset's identifier
+file_in_dataset = "Iris.csv"  # Use the specific file name you want within the dataset
+dataframe = fetch_kaggle_dataset_as_dataframe(dataset_id, file_in_dataset)
+print(dataframe.head())
+
+# Example usage: Reads a CSV using Spark, performs a group by operation, calculates sum, and returns a Pandas DataFrame.
+csv_file_path = "your_path_to_csv.csv"  # Replace with your CSV file path
+group_column = "your_group_column"  # Replace with your group by column
+value_column = "your_value_column"  # Replace with your value column for sum
+pdf_result = process_csv_with_spark(csv_file_path, group_column, value_column)
+print(pdf_result)
