@@ -1,7 +1,7 @@
 import os
 import kaggle
 from pyspark.sql import SparkSession
-
+from io import StringIO
 import pandas as pd
 from azure.storage.filedatalake import DataLakeServiceClient
 from loguru import logger 
@@ -70,32 +70,32 @@ def group_and_count_ordered(df_pandas):
 
     return result_df_pandas
 
-def save_dataframe_to_adls2(df, account_name, account_key, filesystem_name, file_path):
+def write_df_to_adls2(account_name, account_key, file_system_name, file_path, df):
     """
-    Saves a Pandas DataFrame to Azure Data Lake Storage Gen2.
+    Write a pandas DataFrame to Azure Data Lake Storage Gen2 as a CSV file.
 
-    Args:
-    - df (pd.DataFrame): The DataFrame to save.
-    - account_name (str): The ADLS Gen2 account name.
-    - account_key (str): The ADLS Gen2 account key.
-    - filesystem_name (str): The name of the filesystem (equivalent to a container in Blob storage).
-    - file_path (str): The path where the file should be saved, including the filename (e.g., "folder/data.csv").
-
-    Returns:
-    None
+    Parameters:
+    - account_name (str): Azure storage account name
+    - account_key (str): Azure storage account key
+    - file_system_name (str): Name of the file system (container) in ADLS Gen2
+    - file_path (str): Path of the file inside the file system, including its name
+    - df (pd.DataFrame): DataFrame to be written
     """
-
-    # Convert DataFrame to CSV string
-    csv_data = df.to_csv(index=False)
-
-    # Establish a connection to ADLS Gen2
-    service_client = DataLakeServiceClient(account_url=f"https://{account_name}.dfs.core.windows.net", 
+    # Create a Data Lake service client using account name and key
+    service_client = DataLakeServiceClient(account_url=f"https://{account_name}.dfs.core.windows.net",
                                            credential=account_key)
 
-    # Get the filesystem client
-    filesystem_client = service_client.get_file_system_client(filesystem_name)
+    # Get the file system client for the specified file system
+    file_system_client = service_client.get_file_system_client(file_system_name)
 
-    # Get the file client and upload data
-    file_client = filesystem_client.get_file_client(file_path)
-    file_client.upload_data(csv_data, overwrite=True)
+    # Get the data lake file client for the specified file path
+    file_client = file_system_client.get_file_client(file_path)
+
+    # Convert the dataframe to CSV format and get the content in bytes
+    csv_content = StringIO()
+    df.to_csv(csv_content, index=False)
+    csv_bytes = csv_content.getvalue().encode('utf-8')
+
+    # Upload the content to the file
+    file_client.upload_data(csv_bytes, overwrite=True)
 
