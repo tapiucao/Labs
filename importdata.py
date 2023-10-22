@@ -4,6 +4,7 @@ from pyspark.sql import SparkSession
 
 import pandas as pd
 from azure.storage.filedatalake import DataLakeServiceClient
+from loguru import logger 
 
 
 def fetch_kaggle_dataset_as_dataframe(dataset_name, file_name):
@@ -98,15 +99,3 @@ def save_dataframe_to_adls2(df, account_name, account_key, filesystem_name, file
     file_client = filesystem_client.get_file_client(file_path)
     file_client.upload_data(csv_data, overwrite=True)
 
-# Example Usage: Fetch a specified Kaggle dataset file and return it as a Pandas DataFrame.
-dataset_id = "uciml/iris"  # Use your desired dataset's identifier
-file_in_dataset = "Iris.csv"  # Use the specific file name you want within the dataset
-dataframe = fetch_kaggle_dataset_as_dataframe(dataset_id, file_in_dataset)
-print(dataframe.head())
-
-# Example usage: Reads a CSV using Spark, performs a group by operation, calculates sum, and returns a Pandas DataFrame.
-csv_file_path = "your_path_to_csv.csv"  # Replace with your CSV file path
-group_column = "your_group_column"  # Replace with your group by column
-value_column = "your_value_column"  # Replace with your value column for sum
-pdf_result = process_csv_with_spark(csv_file_path, group_column, value_column)
-print(pdf_result)

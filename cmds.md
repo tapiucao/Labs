@@ -4,6 +4,9 @@ conda install -c conda-forge pyspark
 conda install -c conda-forge azure-storage-blob
 conda install -c conda-forge azure-storage-file-datalake
 sudo apt install default-jre --java for spark
+conda install -c conda-forge azure-keyvault-secrets
+conda install -c conda-forge microsoft azure-monitor-ingestion
+conda install -c conda-forge loguru
 
 ##install GIT
 sudo apt install git-all
@@ -20,4 +23,4 @@ curl -sLS https://packages.microsoft.com/keys/microsoft.asc |
 sudo chmod go+r /etc/apt/keyrings/microsoft.gpg
 AZ_DIST=$(lsb_release -cs)
 echo "deb [arch=`dpkg --print-architecture` signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_DIST main" |
-    sudo tee /etc/apt/sources.list.d/azure-cli.list
+    sudo tee /etc/apt/sources.list.d/azure-cli.listdo
