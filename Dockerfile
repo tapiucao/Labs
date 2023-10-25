@@ -19,13 +19,14 @@ RUN apt-get update -y && \
 RUN useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow && \
     mkdir -p ${AIRFLOW_HOME}/dags ${AIRFLOW_HOME}/logs && \
     chmod -R 777 /usr/local/airflow/logs && \
-    chmod -R 777 /usr/local/airflow/dags
+    chmod -R 777 /usr/local/airflow/dags 
     
 # Switch to airflow user
 USER airflow
 
-# Initialize the database
-RUN airflow db init
+# Initialize the database and create airflow admin user
+RUN airflow db init && \
+    airflow users  create --role Admin --username admin --email tapiucao@gmail.com --firstname admin --lastname admin --password admin
 
 EXPOSE 8080
 

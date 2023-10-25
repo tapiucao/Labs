@@ -24,3 +24,8 @@ sudo chmod go+r /etc/apt/keyrings/microsoft.gpg
 AZ_DIST=$(lsb_release -cs)
 echo "deb [arch=`dpkg --print-architecture` signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_DIST main" |
     sudo tee /etc/apt/sources.list.d/azure-cli.listdo
+
+docker:
+
+docker build -t meu-airflow .
+docker run --rm -d -p 8080:8080 -e LOAD_EX=n -e AIRFLOW__CORE__EXECUTOR=SequentialExecutor meu-airflow airflow webserver
