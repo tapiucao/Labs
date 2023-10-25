@@ -3,18 +3,17 @@ FROM python:3.11-slim-buster
 # Set environment variables
 ENV AIRFLOW_HOME=/usr/local/airflow
 
+COPY importdata.py .
+
+# (Optional) If you have requirements for your Python app, add them
+COPY requirements.txt .
+
 # Install dependencies
 RUN apt-get update -y && \
     apt-get install -y gcc && \
     pip install --upgrade pip && \
-    pip install apache-airflow[azure] && \
-    pip install kaggle && \
-    pip install pyspark && \
-    pip install azure-storage-blob && \
-    pip install azure-storage-file-datalake && \
-    pip install azure-keyvault-secrets && \
-    pip install microsoft azure-monitor-ingestion && \
-    pip install loguru && \
+    pip install -r requirements.txt && \
+    pip install apache-airflow[azure]
 
 # Create Airflow user and directories and give proper permissions
 RUN useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow && \

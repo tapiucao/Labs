@@ -1,0 +1,10 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: linux-64
+
+kaggle==1.5.16
+pyspark==3.4.1
+pandas==2.1.1
+loguru==0.5.3
+azure-storage-file-datalake==12.5.0
+azure-keyvault-secrets==4.7.0

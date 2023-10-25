@@ -5,6 +5,11 @@ from io import StringIO
 import pandas as pd
 from azure.storage.filedatalake import DataLakeServiceClient
 from loguru import logger
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.python_operator import PythonOperator
+
 
 
 def fetch_kaggle_dataset_as_dataframe(dataset_name, file_name):
@@ -130,3 +135,55 @@ def write_df_to_adls2(account_name, account_key, file_system_name, file_path, df
     logger.info("Uploading CSV content to Azure Data Lake Storage Gen2.")
     file_client.upload_data(csv_bytes, overwrite=True)
     logger.success(f"Successfully uploaded DataFrame to {file_path}.")
+
+
+default_args = {
+'owner': 'airflow',
+'depends_on_past': False,
+'email_on_failure': False,
+'email_on_retry': False,
+'retries': 1,
+'retry_delay': timedelta(seconds=10),
+}
+
+dag = DAG(
+    'example_dag',
+    default_args=default_args,
+    description='An example DAG',
+    schedule_interval=timedelta(days=1),
+    start_date=datetime(2023, 10, 24),
+    catchup=False,
+)
+
+start_task = DummyOperator(
+    task_id='start_task',
+    dag=dag,
+)
+
+fetch_data_task = PythonOperator(
+    task_id='fetch_data_task',
+    python_callable=fetch_kaggle_dataset_as_dataframe,
+    dag=dag,
+)
+
+process_data_task = PythonOperator(
+    task_id='process_data_task',
+    python_callable=group_and_count_ordered,
+    provide_context=True,  # this is to allow fetching of XCom values
+    dag=dag,
+)
+
+store_data_task = PythonOperator(
+    task_id='store_data_task',
+    python_callable=write_df_to_adls2,
+    provide_context=True,  # this is to allow fetching of XCom values
+    dag=dag,
+)
+
+end_task = DummyOperator(
+    task_id='end_task',
+    dag=dag,
+)
+
+# Define the order of task execution
+start_task >> fetch_data_task >> process_data_task >> store_data_task >> end_task
