@@ -30,7 +30,12 @@ docker:
 docker build -t meu-airflow .
 docker run --rm -d -p 8080:8080 -e LOAD_EX=n -e AIRFLOW__CORE__EXECUTOR=SequentialExecutor meu-airflow airflow webserver
 
+--caso queira copiar arquivo na hora do run
+docker run -d -p 8080:8080 -v /home/tarcisio/estudos/montreal/importdata.py:/usr/local/airflow/dags/importdata.py -e LOAD_EX=n -e AIRFLOW__CORE__EXECUTOR=SequentialExecutor meu-airflow airflow webserver
+
+
 --mount the local dag into docker airflow:
 docker run -d -p 8080:8080 -v /usr/local/airflow/dags/importdata.py -e LOAD_EX=n -e AIRFLOW__CORE__EXECUTOR=SequentialExecutor meu-airflow airflow webserver
-meu-airflow
+docker run -d -v /usr/local/airflow/dags/ -e LOAD_EX=n -e AIRFLOW__CORE__EXECUTOR=SequentialExecutor meu-airflow airflow scheduler
+
 

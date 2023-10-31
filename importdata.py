@@ -1,15 +1,15 @@
 import os
 import kaggle
 from pyspark.sql import SparkSession
-from io import StringIO
 import pandas as pd
 from azure.storage.filedatalake import DataLakeServiceClient
 from loguru import logger
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators.python_operator import PythonOperator
-
+from airflow.operators.dummy import DummyOperator
+from airflow.operators.python import PythonOperator
+from airflow.models import Variable
+from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 
 def fetch_kaggle_dataset_as_dataframe(dataset_name, file_name):
@@ -138,52 +138,49 @@ def write_df_to_adls2(account_name, account_key, file_system_name, file_path, df
 
 
 default_args = {
-'owner': 'airflow',
-'depends_on_past': False,
-'email_on_failure': False,
-'email_on_retry': False,
-'retries': 1,
-'retry_delay': timedelta(seconds=10),
+    "owner": "airflow",
+    "depends_on_past": False,
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "retries": 1,
+    "retry_delay": timedelta(seconds=10),
 }
 
-dag = DAG(
-    'example_dag',
+with DAG(
+    "example_dag",
     default_args=default_args,
-    description='An example DAG',
+    description="An example DAG",
     schedule_interval=timedelta(days=1),
     start_date=datetime(2023, 10, 24),
     catchup=False,
-)
+) as dag:
+    start_task = DummyOperator(task_id="start_task")
 
-start_task = DummyOperator(
-    task_id='start_task',
-    dag=dag,
-)
+    fetch_data_task = PythonOperator(
+        task_id="fetch_data_task",
+        python_callable=fetch_kaggle_dataset_as_dataframe,
+        op_kwargs={
+            "dataset_name": "anoopjohny/real-estate-sales-2001-2020-state-of-connecticut",
+            "file_name": "Real_Estate_Sales_2001-2020_GL.csv",
+        },
+    )
 
-fetch_data_task = PythonOperator(
-    task_id='fetch_data_task',
-    python_callable=fetch_kaggle_dataset_as_dataframe,
-    dag=dag,
-)
+    process_data_task = PythonOperator(
+        task_id="process_data_task",
+        python_callable=group_and_count_ordered,
+    )
 
-process_data_task = PythonOperator(
-    task_id='process_data_task',
-    python_callable=group_and_count_ordered,
-    provide_context=True,  # this is to allow fetching of XCom values
-    dag=dag,
-)
+    store_data_task = PythonOperator(
+        task_id="store_data_task",
+        python_callable=write_df_to_adls2,
+        op_kwargs={
+            "account_name": "montrealadls",
+            "account_key": "dWksQ33gDM56isvYdBv0U/lrOSwK5QQPfLRKCKJagYBhc0pR4UIb2GpPj+tvMT6oFUX24J/fi8lv+AStybQh1g==",
+            "file_system_name": "montrealfilesystem",
+            "file_path": "test_airflow.csv",
+        },
+    )
 
-store_data_task = PythonOperator(
-    task_id='store_data_task',
-    python_callable=write_df_to_adls2,
-    provide_context=True,  # this is to allow fetching of XCom values
-    dag=dag,
-)
+    end_task = DummyOperator(task_id="end_task")
 
-end_task = DummyOperator(
-    task_id='end_task',
-    dag=dag,
-)
-
-# Define the order of task execution
-start_task >> fetch_data_task >> process_data_task >> store_data_task >> end_task
+    start_task >> fetch_data_task >> process_data_task >> store_data_task >> end_task

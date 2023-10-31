@@ -3,8 +3,6 @@ FROM python:3.11-slim-buster
 # Set environment variables
 ENV AIRFLOW_HOME=/usr/local/airflow
 
-COPY importdata.py .
-
 # (Optional) If you have requirements for your Python app, add them
 COPY requirements.txt .
 
@@ -20,6 +18,8 @@ RUN useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow && \
     mkdir -p ${AIRFLOW_HOME}/dags ${AIRFLOW_HOME}/logs && \
     chmod -R 777 /usr/local/airflow/logs && \
     chmod -R 777 /usr/local/airflow/dags 
+
+COPY importdata.py /usr/local/airflow/dags
     
 # Switch to airflow user
 USER airflow
