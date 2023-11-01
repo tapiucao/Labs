@@ -20,7 +20,5 @@ RUN useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow && \
     chmod -R 755 /usr/local/airflow/logs && \
     chmod -R 755 /usr/local/airflow/dags 
 
-COPY importdata.py example_dag_advanced.py example_dag_basic.py /usr/local/airflow/dags/
-
 EXPOSE 8080
 
