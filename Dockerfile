@@ -11,23 +11,16 @@ RUN apt-get update -y && \
     apt-get install -y gcc && \
     pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install apache-airflow[azure]
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create Airflow user and directories and give proper permissions
 RUN useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow && \
     mkdir -p ${AIRFLOW_HOME}/dags ${AIRFLOW_HOME}/logs && \
-    chmod -R 777 /usr/local/airflow/logs && \
-    chmod -R 777 /usr/local/airflow/dags 
+    chmod -R 755 /usr/local/airflow/logs && \
+    chmod -R 755 /usr/local/airflow/dags 
 
-COPY importdata.py /usr/local/airflow/dags
-    
-# Switch to airflow user
-USER airflow
-
-# Initialize the database and create airflow admin user
-RUN airflow db init && \
-    airflow users  create --role Admin --username admin --email tapiucao@gmail.com --firstname admin --lastname admin --password admin
+COPY importdata.py example_dag_advanced.py example_dag_basic.py /usr/local/airflow/dags/
 
 EXPOSE 8080
 
-CMD ["airflow", "webserver", "--port", "8080"]

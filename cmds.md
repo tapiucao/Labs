@@ -30,6 +30,19 @@ docker:
 docker build -t meu-airflow .
 docker run --rm -d -p 8080:8080 -e LOAD_EX=n -e AIRFLOW__CORE__EXECUTOR=SequentialExecutor meu-airflow airflow webserver
 
+--docker-compose
+Running the Compose File
+To run your Airflow setup:
+
+Build the Docker image from your Dockerfile: 
+docker build -t meu-airflow .
+
+Start the services with Docker Compose: 
+docker-compose up -d
+
+This will start both the Airflow webserver and scheduler in detached mode (running in the background). You can access the Airflow web interface by navigating to http://localhost:8080 in a web browser.
+
+
 --caso queira copiar arquivo na hora do run
 docker run -d -p 8080:8080 -v /home/tarcisio/estudos/montreal/importdata.py:/usr/local/airflow/dags/importdata.py -e LOAD_EX=n -e AIRFLOW__CORE__EXECUTOR=SequentialExecutor meu-airflow airflow webserver
 
