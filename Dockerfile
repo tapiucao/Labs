@@ -1,24 +1,27 @@
-FROM python:3.11-slim-buster
+# Use the official Airflow image as a base
+FROM apache/airflow:slim-2.7.2-python3.11
 
-# Set environment variables
-ENV AIRFLOW_HOME=/usr/local/airflow
+COPY requirements.txt /requirements.txt
 
-# (Optional) If you have requirements for your Python app, add them
-COPY requirements.txt .
+# Install additional dependencies if needed (example shown)
+RUN pip install --upgrade pip &&\
+    pip install --no-cache-dir -r /requirements.txt &&\
+    pip install mysql-connector-python &&\
+    pip install virtualenv
 
-# Install dependencies
-RUN apt-get update -y && \
-    apt-get install -y gcc && \
-    pip install --upgrade pip && \
-    pip install -r requirements.txt && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN chmod -R 775 /opt/airflow
 
-# Create Airflow user and directories and give proper permissions
-RUN useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow && \
-    mkdir -p ${AIRFLOW_HOME}/dags ${AIRFLOW_HOME}/logs && \
-    chmod -R 755 /usr/local/airflow/logs && \
-    chmod -R 755 /usr/local/airflow/dags 
+# Copy the entrypoint script
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 
-EXPOSE 8080
+# Switch to root to change file permissions
+USER root
 
+# Set the script to be executable
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Switch back to the default user
+USER airflow
+
+# Set the entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

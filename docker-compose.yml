@@ -1,21 +1,41 @@
 version: '3'
 services:
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: airflow
+      MYSQL_USER: airflow
+      MYSQL_PASSWORD: airflow_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    volumes:
+      - ./mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
   webserver:
     image: meu-airflow
-    restart: always
+    restart: no
+    command: webserver
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__WEBSERVER__SECRET_KEY=admin
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqlconnector://airflow:airflow_pass@mysql:3306/airflow
+
     ports:
       - "8080:8080"
     volumes:
-      - ./dags:/usr/local/airflow/dags
-      - ./logs:/usr/local/airflow/logs
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
     depends_on:
-      - scheduler
+      - mysql
 
   scheduler:
     image: meu-airflow
-    restart: always
+    restart: no
+    command: scheduler
     volumes:
-      - ./dags:/usr/local/airflow/dags
-      - ./logs:/usr/local/airflow/logs
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+    depends_on:
+      - mysql
+
