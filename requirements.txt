@@ -8,3 +8,4 @@ pandas==2.1.1
 loguru==0.5.3
 azure-storage-file-datalake==12.5.0
 azure-keyvault-secrets==4.7.0
+apache-airflow-providers-apache-spark==4.3.0

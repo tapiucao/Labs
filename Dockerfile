@@ -7,7 +7,7 @@ COPY requirements.txt /requirements.txt
 RUN pip install --upgrade pip &&\
     pip install --no-cache-dir -r /requirements.txt &&\
     pip install mysql-connector-python &&\
-    pip install virtualenv
+    pip install virtualenv 
 
 RUN chmod -R 775 /opt/airflow
 
