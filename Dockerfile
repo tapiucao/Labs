@@ -9,13 +9,13 @@ RUN pip install --upgrade pip &&\
     pip install mysql-connector-python &&\
     pip install virtualenv 
 
+# Switch to root to change file permissions
+USER root
+
 RUN chmod -R 775 /opt/airflow
 
 # Copy the entrypoint script
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-
-# Switch to root to change file permissions
-USER root
 
 # Set the script to be executable
 RUN chmod +x /usr/local/bin/entrypoint.sh

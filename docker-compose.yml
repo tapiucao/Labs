@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 services:
   mysql:
     image: mysql:latest
@@ -14,7 +14,7 @@ services:
 
   webserver:
     image: meu-airflow
-    restart: no
+    restart: 'no'
     command: webserver
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
@@ -22,8 +22,6 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=mysql+mysqlconnector://airflow:airflow_pass@mysql:3306/airflow
       - KAGGLE_USERNAME=tarcisiopiucco
       - KAGGLE_KEY=42a7926ee6f123d7e8692561aef1788a
-
-
     ports:
       - "8080:8080"
     volumes:
@@ -34,7 +32,7 @@ services:
 
   scheduler:
     image: meu-airflow
-    restart: no
+    restart: 'no'
     command: scheduler
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
