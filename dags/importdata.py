@@ -9,8 +9,8 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
-from airflow.models import Variable
-from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+
+# from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 
 
 def fetch_kaggle_dataset_as_dataframe(dataset_name, file_name):
@@ -148,9 +148,9 @@ default_args = {
 }
 
 with DAG(
-    "example_dag",
+    "import_kaggle_data_to_adls2",
     default_args=default_args,
-    description="An example DAG",
+    description="import_kaggle_data_to_adls2",
     schedule_interval=timedelta(days=1),
     start_date=datetime(2023, 10, 24),
     catchup=False,
